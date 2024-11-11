@@ -7,9 +7,6 @@ import com.example.crud.repository.PartnerRepository;
 import com.example.crud.dto.*;
 
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
@@ -97,14 +94,14 @@ public class PartnerServiceImpl implements PartnerService {
 	}
 	
 	private Mono<ResponseDTO> updatePartner(RequestDTO request) {
-	    return partnerRepository.findById(request.getId()) // Find partner by ID
+	    return partnerRepository.findById(request.getId())
 	        .flatMap(savedPartner -> {
 	            savedPartner.setLocation(request.getLocation());
 	            savedPartner.setValue(request.getValue());
 	            savedPartner.setUsername(request.getUsername());
 	            LocalDate date = LocalDate.now();
 	            savedPartner.setLastUpdate(date);
-	            return partnerRepository.save(savedPartner); // Save the updated partner
+	            return partnerRepository.save(savedPartner);
 	        })
 	        .map(savedPartner -> {
 	            ResponseDTO response = new ResponseDTO();
@@ -114,7 +111,6 @@ public class PartnerServiceImpl implements PartnerService {
 	            response.setLocation(savedPartner.getLocation());
 	            response.setRequestId(request.getRequestId());
 	            response.setValue(savedPartner.getValue());
-	            // Set other fields in the response if needed
 	            return response;
 	        })
 	        .onErrorResume(error -> {
@@ -127,17 +123,17 @@ public class PartnerServiceImpl implements PartnerService {
 	}
 	
 	private Mono<ResponseDTO> deletePartner(RequestDTO request) {
-	    return partnerRepository.findById(request.getId()) // Find partner by ID
-	        .flatMap(foundPartner -> partnerRepository.delete(foundPartner) // Delete the found partner
-	            .then(Mono.defer(() -> { // Use then to return a Mono
+	    return partnerRepository.findById(request.getId())
+	        .flatMap(foundPartner -> partnerRepository.delete(foundPartner)
+	            .then(Mono.defer(() -> {
 	                ResponseDTO response = new ResponseDTO(); 
 	                response.setCode("0"); 
 	                response.setDetail("Successful"); 
-	                response.setUsername(request.getUsername()); // You may want to set the ID instead
+	                response.setUsername(request.getUsername());
 	                return Mono.just(response); 
 	            }))
 	        )
-	        .switchIfEmpty(Mono.defer(() -> { // Handle case where partner is not found
+	        .switchIfEmpty(Mono.defer(() -> {
 	            ResponseDTO response = new ResponseDTO();
 	            response.setCode("1");
 	            response.setDetail("No partner found with ID " + request.getId());
