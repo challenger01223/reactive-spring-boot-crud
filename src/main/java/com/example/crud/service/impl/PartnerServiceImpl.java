@@ -59,6 +59,7 @@ public class PartnerServiceImpl implements PartnerService {
 					ResponseDTO response = new ResponseDTO();
 					response.setCode("1");
 					response.setDetail(errorMsg);
+					response.setRequestId(request.getRequestId());
 					return Mono.just(response);
 				});
 	}
@@ -89,62 +90,69 @@ public class PartnerServiceImpl implements PartnerService {
 					ResponseDTO response = new ResponseDTO();
 					response.setCode("1");
 					response.setDetail(errorMsg);
+					response.setRequestId(request.getRequestId());
 					return Mono.just(response);
 				});
 	}
 	
 	private Mono<ResponseDTO> updatePartner(RequestDTO request) {
-	    return partnerRepository.findById(request.getId())
-	        .flatMap(savedPartner -> {
-	            savedPartner.setLocation(request.getLocation());
-	            savedPartner.setValue(request.getValue());
-	            savedPartner.setUsername(request.getUsername());
-	            LocalDate date = LocalDate.now();
-	            savedPartner.setLastUpdate(date);
-	            return partnerRepository.save(savedPartner);
-	        })
-	        .map(savedPartner -> {
-	            ResponseDTO response = new ResponseDTO();
-	            response.setCode("0");
-	            response.setDetail("Successful");
-	            response.setUsername(savedPartner.getUsername());
-	            response.setLocation(savedPartner.getLocation());
-	            response.setRequestId(request.getRequestId());
-	            response.setValue(savedPartner.getValue());
-	            return response;
-	        })
-	        .onErrorResume(error -> {
-	            String errorMsg = "Failed update request. No partner found with ID " + request.getId() + " - " + error.getMessage();
-	            ResponseDTO response = new ResponseDTO();
-	            response.setCode("1");
-	            response.setDetail(errorMsg);
-	            return Mono.just(response);
-	        });
+		return partnerRepository.findByUsernameAndLocation(request.getUsername(), request.getLocation())
+		        .flatMap(savedPartner -> {
+		            savedPartner.setValue(request.getValue());
+		            savedPartner.setLastUpdate(LocalDate.now());
+		            return partnerRepository.save(savedPartner);
+		        })
+		        .map(savedPartner -> {
+		            // Create a successful response
+		            ResponseDTO response = new ResponseDTO();
+		            response.setCode("0");
+		            response.setDetail("Successful");
+		            response.setUsername(savedPartner.getUsername());
+		            response.setLocation(savedPartner.getLocation());
+		            response.setRequestId(request.getRequestId());
+		            response.setValue(savedPartner.getValue());
+		            return response;
+		        })
+		        .switchIfEmpty(Mono.defer(() -> {
+		            // Create a response indicating no partner was found
+		            ResponseDTO response = new ResponseDTO();
+		            response.setCode("1");
+		            response.setDetail("No partner found with Username: " + request.getUsername() + " and Location: " + request.getLocation());
+		            response.setRequestId(request.getRequestId());
+		            return Mono.just(response);
+		        }))
+		        .onErrorResume(error -> {
+		            // Handle any errors that occur during the process
+		            String errorMsg = "Failed update request. Error: " + error.getMessage();
+		            ResponseDTO response = new ResponseDTO();
+		            response.setCode("1");
+		            response.setDetail(errorMsg);
+		            response.setRequestId(request.getRequestId());
+		            return Mono.just(response);
+		        });
 	}
 	
 	private Mono<ResponseDTO> deletePartner(RequestDTO request) {
-	    return partnerRepository.findById(request.getId())
-	        .flatMap(foundPartner -> partnerRepository.delete(foundPartner)
-	            .then(Mono.defer(() -> {
-	                ResponseDTO response = new ResponseDTO(); 
-	                response.setCode("0"); 
-	                response.setDetail("Successful"); 
-	                response.setUsername(request.getUsername());
-	                return Mono.just(response); 
-	            }))
-	        )
-	        .switchIfEmpty(Mono.defer(() -> {
-	            ResponseDTO response = new ResponseDTO();
-	            response.setCode("1");
-	            response.setDetail("No partner found with ID " + request.getId());
-	            return Mono.just(response);
-	        }))
-	        .onErrorResume(error -> {
-	            String errorMsg = "Failed delete request - " + error.getMessage();
-	            ResponseDTO response = new ResponseDTO();
-	            response.setCode("1");
-	            response.setDetail(errorMsg);
-	            return Mono.just(response);
-	        });
+		return partnerRepository.deleteByUsernameAndLocationAndValue(
+		        request.getUsername(), 
+		        request.getLocation(), 
+		        request.getValue()
+		    )
+		    .then(Mono.defer(() -> {
+		        ResponseDTO response = new ResponseDTO(); 
+		        response.setCode("0"); 
+		        response.setDetail("Successful"); 
+		        response.setUsername(request.getUsername());
+		        response.setRequestId(request.getRequestId());
+		        return Mono.just(response); 
+		    }))
+		    .onErrorResume(error -> {
+		        String errorMsg = "Failed delete request - " + error.getMessage();
+		        ResponseDTO response = new ResponseDTO();
+		        response.setCode("1");
+		        response.setDetail(errorMsg);
+		        response.setRequestId(request.getRequestId());
+		        return Mono.just(response);
+		    });
 	}
 }
