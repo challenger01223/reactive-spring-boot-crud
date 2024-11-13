@@ -103,7 +103,6 @@ public class PartnerServiceImpl implements PartnerService {
 		            return partnerRepository.save(savedPartner);
 		        })
 		        .map(savedPartner -> {
-		            // Create a successful response
 		            ResponseDTO response = new ResponseDTO();
 		            response.setCode("0");
 		            response.setDetail("Successful");
@@ -114,7 +113,6 @@ public class PartnerServiceImpl implements PartnerService {
 		            return response;
 		        })
 		        .switchIfEmpty(Mono.defer(() -> {
-		            // Create a response indicating no partner was found
 		            ResponseDTO response = new ResponseDTO();
 		            response.setCode("1");
 		            response.setDetail("No partner found with Username: " + request.getUsername() + " and Location: " + request.getLocation());
@@ -122,7 +120,6 @@ public class PartnerServiceImpl implements PartnerService {
 		            return Mono.just(response);
 		        }))
 		        .onErrorResume(error -> {
-		            // Handle any errors that occur during the process
 		            String errorMsg = "Failed update request. Error: " + error.getMessage();
 		            ResponseDTO response = new ResponseDTO();
 		            response.setCode("1");
@@ -133,7 +130,7 @@ public class PartnerServiceImpl implements PartnerService {
 	}
 	
 	private Mono<ResponseDTO> deletePartner(RequestDTO request) {
-		return partnerRepository.deleteByUsernameAndLocationAndValue(
+		return partnerRepository.deleteByUsernameOrLocationOrValue(
 		        request.getUsername(), 
 		        request.getLocation(), 
 		        request.getValue()

@@ -15,6 +15,6 @@ public interface PartnerRepository extends ReactiveCrudRepository<Partner, Long>
 	Flux<Partner> findAllByUsername(Long username);
 	Mono<Partner> findByUsername(Long username);
 	Mono<Partner> findByUsernameAndLocationAndValue(Long username, String location, String value);
-	Mono<Void> deleteByUsernameAndLocationAndValue(Long username, String location, String value);
+	Mono<Void> deleteByUsernameOrLocationOrValue(Long username, String location, String value);
 	Mono<Partner> findByUsernameAndLocation (Long username, String location);
 }
