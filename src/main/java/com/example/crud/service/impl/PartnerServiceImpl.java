@@ -50,6 +50,12 @@ public class PartnerServiceImpl implements PartnerService {
 	        return Mono.just(response);
 	    }
 	    
+	    if (request.getRequestId() == null) {
+	        response.setCode("1");
+	        response.setDetail("Missing required field: request Id");
+	        return Mono.just(response);
+	    }
+	    
 	    String operation = request.getOperation();
 
 	    switch (operation) {
