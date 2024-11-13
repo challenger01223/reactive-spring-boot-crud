@@ -20,19 +20,107 @@ public class PartnerServiceImpl implements PartnerService {
 	
 	@Override
 	public Mono<ResponseDTO> handleRequest(RequestDTO request) {
-        switch (request.getOperation()) {
-            case "create":
-                return createPartner(request);
-            case "view":
-                return viewPartner(request);
-            case "update":
-                return updatePartner(request);
-            case "delete":
-                return deletePartner(request);
-            default:
-            	return Mono.just(new ResponseDTO());
-        }
+		return validateRequest(request)
+	            .flatMap(validationResponse -> {
+	                if ("0".equals(validationResponse.getCode())) {
+				        switch (request.getOperation()) {
+				            case "create":
+				                return createPartner(request);
+				            case "view":
+				                return viewPartner(request);
+				            case "update":
+				                return updatePartner(request);
+				            case "delete":
+				                return deletePartner(request);
+				            default:
+				            	return Mono.just(new ResponseDTO());
+				        }
+	                } else {
+	                    return Mono.just(validationResponse);
+	                }
+	     });
     }
+	
+	private Mono<ResponseDTO> validateRequest(RequestDTO request) {
+	    ResponseDTO response = new ResponseDTO();
+	    
+	    if (request.getOperation() == null) {
+	        response.setCode("1");
+	        response.setDetail("Missing required field: operation");
+	        return Mono.just(response);
+	    }
+	    
+	    String operation = request.getOperation();
+
+	    switch (operation) {
+	        case "create":
+	        	if (request.getUsername() == null || !(request.getUsername() instanceof Long)) {
+	                response.setCode("1");
+	                response.setDetail("Invalid type or missing required field: username for create operation");
+	                return Mono.just(response);
+	            }
+	            if (request.getLocation() == null || !(request.getLocation() instanceof String)) {
+	                response.setCode("1");
+	                response.setDetail("Invalid type or missing required field: location for create operation");
+	                return Mono.just(response);
+	            }
+	            if (request.getValue() == null || !(request.getValue() instanceof String)) {
+	                response.setCode("1");
+	                response.setDetail("Invalid type or missing required field: value for create operation");
+	                return Mono.just(response);
+	            }
+	            break;
+	        case "view":
+	        	if (request.getUsername() == null || !(request.getUsername() instanceof Long)) {
+	                response.setCode("1");
+	                response.setDetail("Invalid type or missing required field: username for view operation");
+	                return Mono.just(response);
+	            }
+	            break;
+	        case "update":
+	        	if (request.getUsername() == null || !(request.getUsername() instanceof Long)) {
+	                response.setCode("1");
+	                response.setDetail("Invalid type or missing required field: username for update operation");
+	                return Mono.just(response);
+	            }
+	            if (request.getLocation() == null || !(request.getLocation() instanceof String)) {
+	                response.setCode("1");
+	                response.setDetail("Invalid type or missing required field: location for update operation");
+	                return Mono.just(response);
+	            }
+	            if (request.getValue() == null || !(request.getValue() instanceof String)) {
+	                response.setCode("1");
+	                response.setDetail("Invalid type or missing required field: value for update operation");
+	                return Mono.just(response);
+	            }
+	            break;
+	        case "delete":
+	        	if (request.getUsername() == null || !(request.getUsername() instanceof Long)) {
+	                response.setCode("1");
+	                response.setDetail("Invalid type or missing required field: username for delete operation");
+	                return Mono.just(response);
+	            }
+	            if (request.getLocation() == null || !(request.getLocation() instanceof String)) {
+	                response.setCode("1");
+	                response.setDetail("Invalid type or missing required field: location for delete operation");
+	                return Mono.just(response);
+	            }
+	            if (request.getValue() == null || !(request.getValue() instanceof String)) {
+	                response.setCode("1");
+	                response.setDetail("Invalid type or missing required field: value for delete operation");
+	                return Mono.just(response);
+	            }
+	            break;
+	        default:
+	            response.setCode("1");
+	            response.setDetail("Invalid operation");
+	            return Mono.just(response);
+	    }
+
+	    // If validation passes
+	    response.setCode("0");
+	    return Mono.just(response);
+	}
 	
 	private Mono<ResponseDTO> createPartner(RequestDTO request) {
 		Partner partner = new Partner();
